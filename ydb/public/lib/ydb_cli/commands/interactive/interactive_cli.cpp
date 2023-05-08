@@ -47,6 +47,7 @@ public:
             for (size_t i = 0; i < m.size(); ++i)
                 TTerminalOutput::MoveCursorLeft();
         }
+        Highlight();
     }
 
     bool Backspace() {
@@ -62,6 +63,7 @@ public:
             for (size_t i = 0; i < m.size() + 1; ++i)
                 TTerminalOutput::MoveCursorLeft();
 
+            Highlight();
             return true;
         } else {
             return false;
@@ -92,23 +94,38 @@ public:
         return Data;
     }
 
-    void ClearScreenArea() {
+    void ClearScreenAreaHelper() {
         for (size_t i = 0; i < CursorPos; ++i)
             TTerminalOutput::MoveCursorLeft();
 
-        for (size_t i = 0; i < Data.size(); ++i)
+        for (size_t i = 0; i < Data.size(); ++i) {
             TTerminalOutput::Print(' ');
+        }
 
         for (size_t i = 0; i < Data.size(); ++i)
             TTerminalOutput::MoveCursorLeft();
 
+    }
+
+    void ClearScreenArea() {
+        ClearScreenAreaHelper();
         CursorPos = 0;
     }
 
-    void DrawScreenArea() {
-        for (size_t i = 0; i < Data.size(); ++i)
-            TTerminalOutput::Print(Data[i]);
+    void DrawScreenAreaHelper() {
+        for (size_t i = 0; i < Data.size(); ++i) {
+            if (Color[i] == 0) {
+                TTerminalOutput::Print(Data[i]);
+            } else {
+                TTerminalOutput::Print("\033[34m");
+                TTerminalOutput::Print(Data[i]);
+                TTerminalOutput::Print("\033[0m");
+            }
+        }
+    }
 
+    void DrawScreenArea() {
+        DrawScreenAreaHelper();
         CursorPos = Data.size();
     }
 
@@ -135,7 +152,33 @@ public:
         CursorPos = 0;
     }
 
+    void Highlight() {
+        Color.clear();
+        Color.resize(Data.size(), 0);
+        size_t i = 0;
+        string keyword = "SELECT";
+        while (i < Data.size()) {
+            if (Data.substr(i, keyword.size()) == keyword) {
+                for (size_t j = i; j < i + keyword.size(); j++) {
+                    Color[j] = 1;
+                }
+                i += keyword.size();
+            } else {
+                i += 1;
+            }
+        }
+        ClearScreenAreaHelper();
+        DrawScreenAreaHelper();
+        for (size_t i = 0; i < Data.size(); i++) {
+            TTerminalOutput::MoveCursorLeft();
+        }
+        for (size_t i = 0; i < CursorPos; i++) {
+            TTerminalOutput::MoveCursorRight();
+        }
+    }
+
 private:
+    string Color;
     string Data;
     size_t CursorPos = 0;
 };
