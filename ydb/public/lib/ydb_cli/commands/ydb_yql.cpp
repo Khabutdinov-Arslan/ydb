@@ -110,7 +110,7 @@ int TCommandYql::Run(TConfig& config) {
 
     
         TTerminalOutput::Print("\033[32mYDB Interactive CLI \033[0m");
-        TTerminalOutput::Print("\033[31m(experimental, no compatibility guarantees)\033[0m\n\n");
+        TTerminalOutput::Print("\033[31m(Arslan experimental, no compatibility guarantees)\033[0m\n\n");
         TInteractiveCli::TConfig interactiveCfg;
         interactiveCfg.Prompt = "\033[32m=> \033[0m";
         TInteractiveCli cli(std::make_shared<TLogic>(this, config), std::move(interactiveCfg));
