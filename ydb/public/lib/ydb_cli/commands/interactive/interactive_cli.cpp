@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <format>
 #include <string>
 #include <memory>
 #include <deque>
@@ -98,9 +100,8 @@ public:
         for (size_t i = 0; i < CursorPos; ++i)
             TTerminalOutput::MoveCursorLeft();
 
-        for (size_t i = 0; i < Data.size(); ++i) {
+        for (size_t i = 0; i < Data.size(); ++i)
             TTerminalOutput::Print(' ');
-        }
 
         for (size_t i = 0; i < Data.size(); ++i)
             TTerminalOutput::MoveCursorLeft();
@@ -114,13 +115,9 @@ public:
 
     void DrawScreenAreaHelper() {
         for (size_t i = 0; i < Data.size(); ++i) {
-            if (Color[i] == 0) {
-                TTerminalOutput::Print(Data[i]);
-            } else {
-                TTerminalOutput::Print("\033[34m");
-                TTerminalOutput::Print(Data[i]);
-                TTerminalOutput::Print("\033[0m");
-            }
+            TTerminalOutput::Print(format("\033[{}m", static_cast<short>(Color[i])).c_str());
+            TTerminalOutput::Print(Data[i]);
+            TTerminalOutput::Print("\033[0m");
         }
     }
 
@@ -152,21 +149,35 @@ public:
         CursorPos = 0;
     }
 
-    void Highlight() {
+    void HighlightHelper() {
+        vector<string> Keywords = {"select", "from"};
+
         Color.clear();
-        Color.resize(Data.size(), 0);
+        Color.resize(Data.size(), TextColor::NORMAL);
+        string LowercaseData = Data;
+        transform(LowercaseData.begin(), LowercaseData.end(), LowercaseData.begin(), [](unsigned char c){ return std::tolower(c); });
+
         size_t i = 0;
-        string keyword = "SELECT";
-        while (i < Data.size()) {
-            if (Data.substr(i, keyword.size()) == keyword) {
-                for (size_t j = i; j < i + keyword.size(); j++) {
-                    Color[j] = 1;
+        while (i < LowercaseData.size()) {
+            bool KeywordFound = false;
+            for (const string& Keyword: Keywords) {
+                if (LowercaseData.substr(i, Keyword.size()) == Keyword) {
+                    for (size_t j = i; j < i + Keyword.size(); j++) {
+                        Color[j] = TextColor::BLUE;
+                    }
+                    i += Keyword.size();
+                    KeywordFound = true;
+                    break;
                 }
-                i += keyword.size();
-            } else {
-                i += 1;
+            }
+            if (!KeywordFound) {
+                i++;
             }
         }
+    }
+
+    void Highlight() {
+        HighlightHelper();
         ClearScreenAreaHelper();
         DrawScreenAreaHelper();
         for (size_t i = 0; i < Data.size(); i++) {
@@ -178,7 +189,11 @@ public:
     }
 
 private:
-    string Color;
+    enum class TextColor : char {
+        NORMAL = 0,
+        BLUE = 34,
+    };
+    vector<TextColor> Color;
     string Data;
     size_t CursorPos = 0;
 };
