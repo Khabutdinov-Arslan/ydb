@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <format>
 #include <string>
 #include <memory>
 #include <deque>
@@ -47,6 +49,7 @@ public:
             for (size_t i = 0; i < m.size(); ++i)
                 TTerminalOutput::MoveCursorLeft();
         }
+        Highlight();
     }
 
     bool Backspace() {
@@ -62,6 +65,7 @@ public:
             for (size_t i = 0; i < m.size() + 1; ++i)
                 TTerminalOutput::MoveCursorLeft();
 
+            Highlight();
             return true;
         } else {
             return false;
@@ -92,7 +96,7 @@ public:
         return Data;
     }
 
-    void ClearScreenArea() {
+    void ClearScreenAreaHelper() {
         for (size_t i = 0; i < CursorPos; ++i)
             TTerminalOutput::MoveCursorLeft();
 
@@ -102,13 +106,23 @@ public:
         for (size_t i = 0; i < Data.size(); ++i)
             TTerminalOutput::MoveCursorLeft();
 
+    }
+
+    void ClearScreenArea() {
+        ClearScreenAreaHelper();
         CursorPos = 0;
     }
 
-    void DrawScreenArea() {
-        for (size_t i = 0; i < Data.size(); ++i)
+    void DrawScreenAreaHelper() {
+        for (size_t i = 0; i < Data.size(); ++i) {
+            TTerminalOutput::Print(format("\033[{}m", static_cast<short>(Color[i])).c_str());
             TTerminalOutput::Print(Data[i]);
+            TTerminalOutput::Print("\033[0m");
+        }
+    }
 
+    void DrawScreenArea() {
+        DrawScreenAreaHelper();
         CursorPos = Data.size();
     }
 
@@ -135,7 +149,48 @@ public:
         CursorPos = 0;
     }
 
+    void HighlightHelper() {
+        vector<string> Keywords = {"and", "or", "xor", "not", "is", "null", "distinct", "between", "in", "as", "case", "when", "then", "else", "end", "alter", "group", "table", "add", "drop", "column", "global", "on", "with", "to", "set", "create", "primary", "key", "partition", "by", "with", "user", "declare", "delete", "from", "where", "group", "having", "insert", "into", "join", "inner", "outer", "cross", "left", "right", "pragma", "replace", "select", "order", "limit", "offset", "commit", "update", "upsert", "values", "window", "between"};
+
+        Color.clear();
+        Color.resize(Data.size(), TextColor::NORMAL);
+        string LowercaseData = Data;
+        transform(LowercaseData.begin(), LowercaseData.end(), LowercaseData.begin(), [](unsigned char c){ return std::tolower(c); });
+
+        size_t i = 0;
+        while (i < LowercaseData.size()) {
+            bool KeywordFound = false;
+            for (const string& Keyword: Keywords) {
+                if ((LowercaseData.substr(i, Keyword.size()) == Keyword) && ((i + Keyword.size() == LowercaseData.size()) || (LowercaseData[i + Keyword.size()] == ' '))) {
+                    for (size_t j = i; j < i + Keyword.size(); j++) {
+                        Color[j] = TextColor::BLUE;
+                    }
+                    i += Keyword.size();
+                    KeywordFound = true;
+                    break;
+                }
+            }
+            if (!KeywordFound) {
+                i++;
+            }
+        }
+    }
+
+    void Highlight() {
+        HighlightHelper();
+        ClearScreenAreaHelper();
+        DrawScreenAreaHelper();
+        for (size_t i = 0; i < Data.size() - CursorPos; i++) {
+            TTerminalOutput::MoveCursorLeft();
+        }
+    }
+
 private:
+    enum class TextColor : char {
+        NORMAL = 0,
+        BLUE = 34,
+    };
+    vector<TextColor> Color;
     string Data;
     size_t CursorPos = 0;
 };
