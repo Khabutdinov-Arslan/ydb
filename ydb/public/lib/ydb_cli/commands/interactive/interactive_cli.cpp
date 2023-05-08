@@ -150,7 +150,7 @@ public:
     }
 
     void HighlightHelper() {
-        vector<string> Keywords = {"select", "from"};
+        vector<string> Keywords = {"and", "or", "xor", "not", "is", "null", "distinct", "between", "in", "as", "case", "when", "then", "else", "end", "alter", "group", "table", "add", "drop", "column", "global", "on", "with", "to", "set", "create", "primary", "key", "partition", "by", "with", "user", "declare", "delete", "from", "where", "group", "having", "insert", "into", "join", "inner", "outer", "cross", "left", "right", "pragma", "replace", "select", "order", "limit", "offset", "commit", "update", "upsert", "values", "window", "between"};
 
         Color.clear();
         Color.resize(Data.size(), TextColor::NORMAL);
@@ -161,7 +161,7 @@ public:
         while (i < LowercaseData.size()) {
             bool KeywordFound = false;
             for (const string& Keyword: Keywords) {
-                if (LowercaseData.substr(i, Keyword.size()) == Keyword) {
+                if ((LowercaseData.substr(i, Keyword.size()) == Keyword) && ((i + Keyword.size() == LowercaseData.size()) || (LowercaseData[i + Keyword.size()] == ' '))) {
                     for (size_t j = i; j < i + Keyword.size(); j++) {
                         Color[j] = TextColor::BLUE;
                     }
@@ -180,11 +180,8 @@ public:
         HighlightHelper();
         ClearScreenAreaHelper();
         DrawScreenAreaHelper();
-        for (size_t i = 0; i < Data.size(); i++) {
+        for (size_t i = 0; i < Data.size() - CursorPos; i++) {
             TTerminalOutput::MoveCursorLeft();
-        }
-        for (size_t i = 0; i < CursorPos; i++) {
-            TTerminalOutput::MoveCursorRight();
         }
     }
 
